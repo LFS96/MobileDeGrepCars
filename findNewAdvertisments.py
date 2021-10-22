@@ -67,7 +67,7 @@ def get_advertisements_url(pages, min_price, max_price, min_kw, max_kw, fuel):
 
         # Break if sites do not include any advertisements
         # no need to process next pages
-        if i == 0:
+        if i <= 1:
             break
 
 
@@ -82,8 +82,11 @@ if __name__ == '__main__':
     #            0  50  100 150  250  500     PS
 
     # Rufe mit jedem Filter die Abfrage auf
-    for price in range(0, len(price_arr) - 1):
+    #for price in range(0, len(price_arr) - 1):
+    for price in range(0,90):
         for power in range(0, len(power_arr) - 1):
             for fuel in fuels:
-                get_advertisements_url(pages, price_arr[price], price_arr[price + 1], power_arr[power],
+                #get_advertisements_url(pages, price_arr[price], price_arr[price + 1], power_arr[power],
+                #                       power_arr[power + 1], fuel)
+                get_advertisements_url(pages, price * 500, (price + 1) * 500, power_arr[power],
                                        power_arr[power + 1], fuel)
