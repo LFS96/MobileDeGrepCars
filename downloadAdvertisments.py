@@ -3,13 +3,13 @@ import requests
 from findNewAdvertisments import get_mysql_connector
 
 
-def update_advertisements(aid, data):
+def update_advertisements(a_id, data):
     # Write url to advertisements Table
     mydb = get_mysql_connector()
     my_cursor = mydb.cursor()
 
     sql = "UPDATE mobilede.advertisements SET raw = %s, status = %s WHERE id = %s"
-    val = (data, 1,  aid)
+    val = (data, 1,  a_id)
 
     my_cursor.execute(sql, val)
     mydb.commit()
@@ -30,11 +30,11 @@ def get_next_advertisements(numbers):
     i = 0
     for x in myresult:
         i += 1
-        aid = x[0]
+        a_id = x[0]
         url = x[1]
         print(str(i) + " - " + url)
         html = downloadUrl(url)
-        update_advertisements(aid, html)
+        update_advertisements(a_id, html)
 
 if __name__ == '__main__':
     get_next_advertisements(120000)
