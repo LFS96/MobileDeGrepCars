@@ -75,7 +75,7 @@ def get_advertisements_url(pages, min_price, max_price, min_kw, max_kw, fuel):
 if __name__ == '__main__':
 
     # Filter Optionen
-    pages = 10  # Anzahl seiten die maximal abgefragt werden
+    pages = 5  # Anzahl seiten die maximal abgefragt werden
     fuels = ["DIESEL", "PETROL", "LPG"]
     price_arr = [0, 5000, 10000, 25000, 50000, 100000, 200000]  # Preis Bereiche
     power_arr = [0, 37, 74, 110, 183, 368]  # KW Bereiche
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     # Rufe mit jedem Filter die Abfrage auf
     #for price in range(0, len(price_arr) - 1):
-    for price in range(0,90):
+    for price in range(90, 200):
         for power in range(0, len(power_arr) - 1):
             for fuel in fuels:
                 #get_advertisements_url(pages, price_arr[price], price_arr[price + 1], power_arr[power],

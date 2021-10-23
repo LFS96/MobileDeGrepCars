@@ -21,8 +21,48 @@ USE `mobilede`;
 CREATE TABLE IF NOT EXISTS `advertisements` (
   `id` int(11) NOT NULL,
   `url` varchar(2048) COLLATE utf8mb4_bin DEFAULT NULL,
-  `raw` text COLLATE utf8mb4_bin,
+  `raw` longtext COLLATE utf8mb4_bin,
   `status` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Daten Export vom Benutzer nicht ausgewählt
+
+-- Exportiere Struktur von Tabelle mobilede.cars
+CREATE TABLE IF NOT EXISTS `cars` (
+  `id` int(11) NOT NULL,
+  `title` text COLLATE utf8mb4_bin NOT NULL,
+  `price` decimal(12,2) DEFAULT NULL,
+  `damage` text COLLATE utf8mb4_bin,
+  `mileage` int(11) DEFAULT NULL,
+  `displacement` int(11) DEFAULT NULL,
+  `power` int(11) DEFAULT NULL,
+  `consumption_k` decimal(12,2) DEFAULT NULL,
+  `consumption_i` decimal(12,2) DEFAULT NULL,
+  `consumption_a` decimal(12,2) DEFAULT NULL,
+  `fuel` text COLLATE utf8mb4_bin,
+  `emission` int(11) DEFAULT NULL,
+  `transmission` int(11) DEFAULT NULL,
+  `registration` date DEFAULT NULL,
+  `info` longtext COLLATE utf8mb4_bin,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Daten Export vom Benutzer nicht ausgewählt
+
+-- Exportiere Struktur von Tabelle mobilede.cars_features
+CREATE TABLE IF NOT EXISTS `cars_features` (
+  `car` int(11) NOT NULL,
+  `feature` int(11) NOT NULL,
+  PRIMARY KEY (`car`,`feature`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Daten Export vom Benutzer nicht ausgewählt
+
+-- Exportiere Struktur von Tabelle mobilede.features
+CREATE TABLE IF NOT EXISTS `features` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
