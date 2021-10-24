@@ -1,11 +1,7 @@
-import requests
 from bs4 import BeautifulSoup
-import mysql.connector
-from urllib.parse import urlparse
-from urllib.parse import parse_qs
 from findNewAdvertisments import get_mysql_connector
 import datetime
-import re
+
 
 def get_data(num):
     mydb = get_mysql_connector()
@@ -15,58 +11,153 @@ def get_data(num):
     for x in myresult:
         return x[0]
 
-def anal_html(num):
+def create_features(feature):
+    mydb = get_mysql_connector()
+    mycursor = mydb.cursor()
+    sql = "SELECT id FROM mobilede.features WHERE name = %s"
+    mycursor.execute(sql, (feature,))
+    for results in mycursor.fetchall():
+        return results[0]
+    else:
+        mycursor.execute("INSERT INTO mobilede.features (name) VALUES ( %s )", (feature,))
+        mydb.commit()
+        return create_features(feature)
+
+
+def save_car_features(a_id, features):
+    mydb = get_mysql_connector()
+    mycursor = mydb.cursor()
+    for feature in features:
+        f_id = create_features(feature)
+        mycursor.execute("INSERT INTO mobilede.cars_features (car, feature) VALUES ( %s, %s )", (a_id, f_id))
+        mydb.commit()
+
+
+
+def save_car(num):
+
     html = get_data(num)
     soup = BeautifulSoup(html, 'html.parser')
+    mydb = get_mysql_connector()
+    my_cursor = mydb.cursor()
+    try:
+        title = soup.find('title').get_text()
+        print(str(num) + " - " + title)
 
-    print(soup.find('title').get_text())                                                    # Title
+        preis = int("".join(filter(str.isdigit, soup.find("span", {"class": "h3", "data-testid": "prime-price"}).get_text())))
 
-    preis = int("".join(filter(str.isdigit, soup.find("span", {"class": "h3", "data-testid": "prime-price"}).get_text())))
-    fahrzeugzustand = soup.find("div", {"class": "g-col-6", "id": "damageCondition-v"}).get_text()
-    laufleistung = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "mileage-v"}).get_text())))
-    hubraum = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "cubicCapacity-v"}).get_text()))[:-1])
-    leistung = int(soup.find("div", {"class": "g-col-6", "id": "power-v"}).get_text().split()[0])
-    treibstoff = soup.find("div", {"class": "g-col-6", "id": "fuel-v"}).get_text()
-    CO2 = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "envkv.emission-v"}).get_text())))
-    schaltung = soup.find("div", {"class": "g-col-6", "id": "transmission-v"}).get_text()
-    erstzulassung = datetime.datetime.strptime(soup.find("div", {"class": "g-col-6", "id": "firstRegistration-v"}).get_text(), "%m/%Y").date()
-    description = soup.find("div", {"class": "description"}).get_text()
+        # Fahrzeugstand
+        try:
+            fahrzeugzustand = soup.find("div", {"class": "g-col-6", "id": "damageCondition-v"}).get_text()
+        except:
+            fahrzeugzustand = None
 
-    i = 0
-    verbrauch_kombiniert = verbrauch_innerorts = verbrauch_ausserorts = 0
-    for v in BeautifulSoup(str(soup.find("div", {"class": "g-col-6", "id": "envkv.consumption-v"})), 'html.parser').find_all("div", {"class": "u-margin-bottom-9"}):
-        if i == 0:
-            verbrauch_kombiniert = float(v.get_text()[4:-20].replace(",", "."))
-        if i == 1:
-            verbrauch_innerorts = float(v.get_text()[4:-19].replace(",", "."))
-        if i == 2:
-            verbrauch_ausserorts = float(v.get_text()[4:-19].replace(",", "."))
-        i += 1
+        # laufleistung
+        try:
+            laufleistung = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "mileage-v"}).get_text())))
+        except:
+            laufleistung = None
 
-    features = []
-    for f in BeautifulSoup(str(soup.find("div", {"class": "cBox-body", "id": "features"})), 'html.parser').find_all(
-            "div", {"class": "bullet-list"}):
-        features.append(f.get_text())
+        try:
+            hubraum = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "cubicCapacity-v"}).get_text()))[:-1])
+        except:
+            hubraum = None
+        leistung = int(soup.find("div", {"class": "g-col-6", "id": "power-v"}).get_text().split()[0])
+        treibstoff = soup.find("div", {"class": "g-col-6", "id": "fuel-v"}).get_text()
 
-    print(preis)
-    print(fahrzeugzustand)
-    print(laufleistung)
-    print(hubraum)
-    print(leistung)
-    print(verbrauch_kombiniert)
-    print(verbrauch_innerorts)
-    print(verbrauch_ausserorts)
-    print(treibstoff)
-    print(CO2)
-    print(schaltung)
-    print(erstzulassung)
-    print(features)
-    print(description)
+        # Emission
+        try:
+            CO2 = int("".join(filter(str.isdigit, soup.find("div", {"class": "g-col-6", "id": "envkv.emission-v"}).get_text())))
+        except:
+            CO2 = None
+
+        # Schlatung
+        try:
+            schaltung = soup.find("div", {"class": "g-col-6", "id": "transmission-v"}).get_text()
+        except:
+            schaltung = None
+
+        # Erstzulassung
+        try:
+            erstzulassung = datetime.datetime.strptime(soup.find("div", {"class": "g-col-6", "id": "firstRegistration-v"}).get_text(), "%m/%Y").date()
+        except:
+            erstzulassung = None
+
+        # Beschreibung
+        try:
+            description = soup.find("div", {"class": "description"}).get_text()
+        except:
+            description = ""
+
+        i = 0
+        verbrauch_kombiniert = verbrauch_innerorts = verbrauch_ausserorts = 0
+        for v in BeautifulSoup(str(soup.find("div", {"class": "g-col-6", "id": "envkv.consumption-v"})), 'html.parser').find_all("div", {"class": "u-margin-bottom-9"}):
+            verbrauch = v.get_text()
+            begin = 4
+            end = 0
+            if(verbrauch[-1] == "*"):
+                begin = 0
+                end = -1
+
+            if i == 0:
+                verbrauch_kombiniert = float(verbrauch[begin:(-20 + end)].replace(",", "."))
+            if i == 1:
+                verbrauch_innerorts = float(verbrauch[begin:(-19 + end)].replace(",", "."))
+            if i == 2:
+                verbrauch_ausserorts = float(verbrauch[begin:(-19 + end)].replace(",", "."))
+            i += 1
+
+        features = []
+        for f in BeautifulSoup(str(soup.find("div", {"class": "cBox-body", "id": "features"})), 'html.parser').find_all(
+                "div", {"class": "bullet-list"}):
+            features.append(f.get_text())
+
+
+        # print(preis)
+        # print(fahrzeugzustand)
+        # print(laufleistung)
+        # print(hubraum)
+        # print(leistung)
+        # print(verbrauch_kombiniert)
+        # print(verbrauch_innerorts)
+        # print(verbrauch_ausserorts)
+        # print(treibstoff)
+        # print(CO2)
+        # print(schaltung)
+        # print(erstzulassung)
+        # print(features)
+        # print(description)
+
+        status = 2
 
 
 
-def find_db_entry():
-    print("xxx")
+        sql = "INSERT IGNORE INTO mobilede.cars " \
+              "(id, title, price,damage, mileage, displacement, power, " \
+              "consumption_k, consumption_i, consumption_a, fuel, emission, transmission, registration, info) " \
+              "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        val = (num, title, preis, fahrzeugzustand, laufleistung, hubraum, leistung,
+               verbrauch_kombiniert, verbrauch_innerorts, verbrauch_ausserorts,
+               treibstoff, CO2, schaltung, erstzulassung, description)
+        my_cursor.execute(sql, val)
+        mydb.commit()
+
+        save_car_features(num, features)
+    except:
+        status = 99
+
+    my_cursor.execute("UPDATE mobilede.advertisements SET status = %s WHERE id = %s ", (status, num,))
+    mydb.commit()
+
+
+def find_db_entry(limit):
+    mydb = get_mysql_connector()
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT id FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
+
+    myresult = mycursor.fetchall()
+    for x in myresult:
+        save_car(x[0])
 
 if __name__ == '__main__':
-    anal_html(280100679)
+    find_db_entry(100000)
