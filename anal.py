@@ -1,14 +1,18 @@
 from bs4 import BeautifulSoup
 from findNewAdvertisments import get_mysql_connector
 import datetime
+from multiprocessing.dummy import Pool as ThreadPool
 
 
 def get_data(num):
     mydb = get_mysql_connector()
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT raw FROM mobilede.advertisements WHERE id = " + str(num))
+    #print(num)
+    mycursor.execute("SELECT raw FROM mobilede.advertisements WHERE id = %s ", (num,))
     myresult = mycursor.fetchall()
     for x in myresult:
+        mycursor.close()
+        mydb.close()
         return x[0]
 
 def create_features(feature):
@@ -17,10 +21,14 @@ def create_features(feature):
     sql = "SELECT id FROM mobilede.features WHERE name = %s"
     mycursor.execute(sql, (feature,))
     for results in mycursor.fetchall():
+        mycursor.close()
+        mydb.close()
         return results[0]
     else:
         mycursor.execute("INSERT INTO mobilede.features (name) VALUES ( %s )", (feature,))
         mydb.commit()
+        mycursor.close()
+        mydb.close()
         return create_features(feature)
 
 
@@ -31,15 +39,17 @@ def save_car_features(a_id, features):
         f_id = create_features(feature)
         mycursor.execute("INSERT INTO mobilede.cars_features (car, feature) VALUES ( %s, %s )", (a_id, f_id))
         mydb.commit()
-
+    mycursor.close()
+    mydb.close()
 
 
 def save_car(num):
-
-    html = get_data(num)
-    soup = BeautifulSoup(html, 'html.parser')
     mydb = get_mysql_connector()
     my_cursor = mydb.cursor()
+    num = num[0]
+    html = get_data(num)
+    soup = BeautifulSoup(html, 'html.parser')
+
     try:
         title = soup.find('title').get_text()
         print(str(num) + " - " + title)
@@ -130,8 +140,6 @@ def save_car(num):
 
         status = 2
 
-
-
         sql = "INSERT IGNORE INTO mobilede.cars " \
               "(id, title, price,damage, mileage, displacement, power, " \
               "consumption_k, consumption_i, consumption_a, fuel, emission, transmission, registration, info) " \
@@ -148,6 +156,8 @@ def save_car(num):
 
     my_cursor.execute("UPDATE mobilede.advertisements SET status = %s WHERE id = %s ", (status, num,))
     mydb.commit()
+    my_cursor.close()
+    mydb.close()
 
 
 def find_db_entry(limit):
@@ -156,8 +166,15 @@ def find_db_entry(limit):
     mycursor.execute("SELECT id FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
 
     myresult = mycursor.fetchall()
-    for x in myresult:
-        save_car(x[0])
+
+
+    # mit Pools (Multithreads)
+    pool = ThreadPool(16)
+    pool.map(save_car, myresult)
+
+    # Single Threads
+   # for x in myresult:
+   #     save_car(x[0])
 
 if __name__ == '__main__':
     find_db_entry(100000)
