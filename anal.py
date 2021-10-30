@@ -4,8 +4,7 @@ import datetime
 from multiprocessing.dummy import Pool as ThreadPool
 
 
-def get_data(num):
-    mydb = get_mysql_connector()
+def get_data(mydb, num):
     mycursor = mydb.cursor()
     #print(num)
     mycursor.execute("SELECT raw FROM mobilede.advertisements WHERE id = %s ", (num,))
@@ -15,39 +14,36 @@ def get_data(num):
         mydb.close()
         return x[0]
 
-def create_features(feature):
-    mydb = get_mysql_connector()
+
+def create_features(mydb, feature):
     mycursor = mydb.cursor()
     sql = "SELECT id FROM mobilede.features WHERE name = %s"
     mycursor.execute(sql, (feature,))
     for results in mycursor.fetchall():
         mycursor.close()
-        mydb.close()
         return results[0]
     else:
         mycursor.execute("INSERT INTO mobilede.features (name) VALUES ( %s )", (feature,))
         mydb.commit()
         mycursor.close()
-        mydb.close()
         return create_features(feature)
 
 
-def save_car_features(a_id, features):
-    mydb = get_mysql_connector()
+def save_car_features(mydb, a_id, features):
     mycursor = mydb.cursor()
     for feature in features:
-        f_id = create_features(feature)
+        f_id = create_features(mydb, feature)
         mycursor.execute("INSERT INTO mobilede.cars_features (car, feature) VALUES ( %s, %s )", (a_id, f_id))
         mydb.commit()
     mycursor.close()
-    mydb.close()
 
 
-def save_car(num):
+
+def save_car(data):
     mydb = get_mysql_connector()
     my_cursor = mydb.cursor()
-    num = num[0]
-    html = get_data(num)
+    num = data[0]
+    html = data[1]
     soup = BeautifulSoup(html, 'html.parser')
 
     try:
@@ -99,6 +95,35 @@ def save_car(num):
         except:
             description = ""
 
+        # FARBE
+        try:
+            color = soup.find("div", {"class": "g-col-6", "id": "color-v"}).get_text()
+        except:
+            color = ""
+
+        try:
+            color_manufacturer = soup.find("div", {"class": "g-col-6", "id": "manufacturerColorName-v"}).get_text()
+        except:
+            color_manufacturer = ""
+
+        # Category
+        try:
+            category = soup.find("div", {"class": "g-col-6", "id": "category-v"}).get_text()
+        except:
+            category = ""
+
+        # Marke
+        try:
+            brand = soup.find("meta", {"property": "og:title"})["content"]
+        except:
+            brand = ""
+
+        # Modell
+        try:
+          model = soup.find("div", {"class": "financing-overlay__main"}).find("h3").get_text().replace("Diesen", "").replace(brand, "").replace("finanzieren?", "").strip()
+        except:
+          model = ""
+
         i = 0
         verbrauch_kombiniert = verbrauch_innerorts = verbrauch_ausserorts = 0
         for v in BeautifulSoup(str(soup.find("div", {"class": "g-col-6", "id": "envkv.consumption-v"})), 'html.parser').find_all("div", {"class": "u-margin-bottom-9"}):
@@ -122,35 +147,37 @@ def save_car(num):
                 "div", {"class": "bullet-list"}):
             features.append(f.get_text())
 
-
-        # print(preis)
-        # print(fahrzeugzustand)
-        # print(laufleistung)
-        # print(hubraum)
-        # print(leistung)
-        # print(verbrauch_kombiniert)
-        # print(verbrauch_innerorts)
-        # print(verbrauch_ausserorts)
-        # print(treibstoff)
-        # print(CO2)
-        # print(schaltung)
-        # print(erstzulassung)
-        # print(features)
-        # print(description)
+        """
+        print(preis)
+        print(fahrzeugzustand)
+        print(laufleistung)
+        print(hubraum)
+        print(leistung)
+        print(verbrauch_kombiniert)
+        print(verbrauch_innerorts)
+        print(verbrauch_ausserorts)
+        print(treibstoff)
+        print(CO2)
+        print(schaltung)
+        print(erstzulassung)
+        print(features)
+        print(description)
+        """
 
         status = 2
 
         sql = "INSERT IGNORE INTO mobilede.cars " \
               "(id, title, price,damage, mileage, displacement, power, " \
-              "consumption_k, consumption_i, consumption_a, fuel, emission, transmission, registration, info) " \
-              "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+              "consumption_k, consumption_i, consumption_a, fuel, emission, transmission, registration, info," \
+              "color, color_manf, manufacturer, model, category) " \
+              "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         val = (num, title, preis, fahrzeugzustand, laufleistung, hubraum, leistung,
                verbrauch_kombiniert, verbrauch_innerorts, verbrauch_ausserorts,
-               treibstoff, CO2, schaltung, erstzulassung, description)
+               treibstoff, CO2, schaltung, erstzulassung, description, color, color_manufacturer, brand, model, category)
         my_cursor.execute(sql, val)
         mydb.commit()
 
-        save_car_features(num, features)
+        save_car_features(mydb, num, features)
     except:
         status = 99
 
@@ -163,7 +190,7 @@ def save_car(num):
 def find_db_entry(limit):
     mydb = get_mysql_connector()
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT id FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
+    mycursor.execute("SELECT id, raw FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
 
     myresult = mycursor.fetchall()
 
@@ -172,9 +199,11 @@ def find_db_entry(limit):
     pool = ThreadPool(16)
     pool.map(save_car, myresult)
 
+    mycursor.close()
+    mydb.close()
     # Single Threads
    # for x in myresult:
    #     save_car(x[0])
 
 if __name__ == '__main__':
-    find_db_entry(100000)
+    find_db_entry(total)
