@@ -1,8 +1,48 @@
 from bs4 import BeautifulSoup
 from findNewAdvertisments import get_mysql_connector
 import datetime
+from os import system, name
 from multiprocessing.dummy import Pool as ThreadPool
+counter = -1
+total = 20000
 
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    clear()
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+def clear():
+    # for windows
+    if name == 'nt':
+        _ = system('cls')
+
+    # for mac and linux(here, os.name is 'posix')
+    else:
+        _ = system('clear')
+
+def increaseCounter():
+        global counter
+        global total
+        counter += 1
+        printProgressBar(counter, total)
 
 def get_data(mydb, num):
     mycursor = mydb.cursor()
@@ -48,7 +88,7 @@ def save_car(data):
 
     try:
         title = soup.find('title').get_text()
-        print(str(num) + " - " + title)
+        # print(str(num) + " - " + title)
 
         preis = int("".join(filter(str.isdigit, soup.find("span", {"class": "h3", "data-testid": "prime-price"}).get_text())))
 
@@ -181,15 +221,19 @@ def save_car(data):
     except:
         status = 99
 
+    increaseCounter()
     my_cursor.execute("UPDATE mobilede.advertisements SET status = %s WHERE id = %s ", (status, num,))
     mydb.commit()
     my_cursor.close()
     mydb.close()
 
 
-def find_db_entry(limit):
+def find_db_entry():
+    global total
+    limit = total
     mydb = get_mysql_connector()
     mycursor = mydb.cursor()
+    increaseCounter()
     mycursor.execute("SELECT id, raw FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
 
     myresult = mycursor.fetchall()
@@ -206,4 +250,4 @@ def find_db_entry(limit):
    #     save_car(x[0])
 
 if __name__ == '__main__':
-    find_db_entry(total)
+    find_db_entry()
