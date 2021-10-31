@@ -196,7 +196,7 @@ def find_db_entry(limit):
 
 
     # mit Pools (Multithreads)
-    pool = ThreadPool(16)
+    pool = ThreadPool(64)
     pool.map(save_car, myresult)
 
     mycursor.close()
