@@ -1,4 +1,7 @@
 SELECT c.*,
+       co.category as color_category,
+       m.country,
+       count(DISTINCT  f.id) as features,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE1x%', 'X', '')   as F1,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE2x%', 'X', '')   as F2,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE3x%', 'X', '')   as F3,
@@ -117,17 +120,21 @@ SELECT c.*,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE116x%', 'X', '') as F116,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE117x%', 'X', '') as F117
   FROM cars  as c
+         LEFT JOIN color co on c.color = co.color
+         LEFT JOIN manufacturer m on c.manufacturer = m.manufacturer
          LEFT JOIN cars_features as cf ON c.id = cf.car
          INNER JOIN features AS f ON cf.feature = f.id
     WHERE 1=1
             AND registration is not null
-            AND color is not null
-           AND color <> ""
+            AND c.color is not null
+           AND c.color <> ""
             AND model is not null
-            AND manufacturer is not null
-            AND category is not null
-            AND category LIKE  "%Kleinwagen%"
+            AND m.manufacturer is not null
+            AND c.category is not null
+            AND c.category LIKE  "%Kleinwagen%"
             AND damage = "Unfallfrei"
             AND model NOT IN ("A3", "Golf", "Leon")
             AND year(registration) BETWEEN 2010 AND 2014
-    GROUP BY id
+    GROUP BY id, co.category, m.country;
+
+SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));

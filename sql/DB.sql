@@ -7,6 +7,9 @@ create table mobilede.advertisements
 	status int null
 );
 
+create index advertisements_id_index
+	on mobilede.advertisements (id);
+
 create index advertisements_status_index
 	on mobilede.advertisements (status);
 
@@ -35,6 +38,15 @@ create table mobilede.cars
 	model varchar(255) null
 );
 
+create index cars_id_index
+	on mobilede.cars (id);
+
+create index cars_mileage_index
+	on mobilede.cars (mileage);
+
+create index cars_price_index
+	on mobilede.cars (price);
+
 create table mobilede.cars_features
 (
 	car int not null,
@@ -42,10 +54,23 @@ create table mobilede.cars_features
 	primary key (car, feature)
 );
 
+create table mobilede.color
+(
+	color varchar(255) null,
+	category varchar(255) null
+);
+
 create table mobilede.features
 (
 	id int auto_increment
 		primary key,
 	name varchar(255) null
+);
+
+create table mobilede.manufacturer
+(
+	manufacturer varchar(255) not null
+		primary key,
+	country varchar(255) null
 );
 
