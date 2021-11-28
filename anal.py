@@ -3,6 +3,7 @@ from findNewAdvertisments import get_mysql_connector
 import datetime
 from os import system, name
 from multiprocessing.dummy import Pool as ThreadPool
+import re
 counter = -1
 total = 20000
 
@@ -81,7 +82,7 @@ def save_car_features(mydb, a_id, features):
 
 def save_car(data):
     mydb = get_mysql_connector()
-    my_cursor = mydb.cursor()
+
     num = data[0]
     html = data[1]
     soup = BeautifulSoup(html, 'html.parser')
@@ -164,6 +165,13 @@ def save_car(data):
         except:
           model = ""
 
+        try:
+            s = soup.find("p", {"class": "seller-address"}).get_text()
+            start = s.find('DE-') + 3
+            plz = s[start:start+5]
+        except:
+            plz = ""
+
         i = 0
         verbrauch_kombiniert = verbrauch_innerorts = verbrauch_ausserorts = 0
         for v in BeautifulSoup(str(soup.find("div", {"class": "g-col-6", "id": "envkv.consumption-v"})), 'html.parser').find_all("div", {"class": "u-margin-bottom-9"}):
@@ -206,15 +214,19 @@ def save_car(data):
 
         status = 2
 
+
+        my_cursor = mydb.cursor()
         sql = "INSERT IGNORE INTO mobilede.cars " \
               "(id, title, price,damage, mileage, displacement, power, " \
               "consumption_k, consumption_i, consumption_a, fuel, emission, transmission, registration, info," \
-              "color, color_manf, manufacturer, model, category) " \
-              "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+              "color, color_manf, manufacturer, model, category, city) " \
+              "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         val = (num, title, preis, fahrzeugzustand, laufleistung, hubraum, leistung,
                verbrauch_kombiniert, verbrauch_innerorts, verbrauch_ausserorts,
-               treibstoff, CO2, schaltung, erstzulassung, description, color, color_manufacturer, brand, model, category)
+               treibstoff, CO2, schaltung, erstzulassung, description,
+               color, color_manufacturer, brand, model, category, plz)
         my_cursor.execute(sql, val)
+        my_cursor.close()
         mydb.commit()
 
         save_car_features(mydb, num, features)
@@ -222,6 +234,7 @@ def save_car(data):
         status = 99
 
     increaseCounter()
+    my_cursor = mydb.cursor()
     my_cursor.execute("UPDATE mobilede.advertisements SET status = %s WHERE id = %s ", (status, num,))
     mydb.commit()
     my_cursor.close()
@@ -232,6 +245,9 @@ def find_db_entry():
     global total
     limit = total
     mydb = get_mysql_connector()
+
+    increaseCounter()
+
     mycursor = mydb.cursor()
     increaseCounter()
     mycursor.execute("SELECT id, raw FROM mobilede.advertisements WHERE status = 1 LIMIT " + str(limit))
