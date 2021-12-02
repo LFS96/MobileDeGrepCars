@@ -1,6 +1,7 @@
 SELECT c.*,
        co.category as color_category,
        m.country,
+       l.*,
        count(DISTINCT  f.id) as features,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE1x%', '1','0')   as F1,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE2x%', '1','0')   as F2,
@@ -124,17 +125,17 @@ SELECT c.*,
          LEFT JOIN manufacturer m on c.manufacturer = m.manufacturer
          LEFT JOIN cars_features as cf ON c.id = cf.car
          INNER JOIN features AS f ON cf.feature = f.id
-    WHERE 1=1
-            AND registration is not null
-            AND c.color is not null
-           AND c.color <> ""
-            AND model is not null
-            AND m.manufacturer is not null
-            AND c.category is not null
-            AND c.category LIKE  "%Kleinwagen%"
-            AND damage = "Unfallfrei"
-            AND model NOT IN ("A3", "Golf", "Leon")
-            AND year(registration) BETWEEN 2010 AND 2014
+         INNER JOIN categories c2 on c.model = c2.model AND c2.manufacture = c.manufacturer
+         LEFT JOIN location as l ON city = zip
+    WHERE registration is not null
+        AND c.color is not null
+        AND c.color <> ''
+        AND m.manufacturer is not null
+        AND c.category is not null
+        AND c2.category IN ('Kleinwagen', 'Kleinstwagen')
+        AND damage = 'Unfallfrei'
+        AND year(registration) BETWEEN 2010 AND 2014
+        AND price <= 45000
     GROUP BY id, co.category, m.country;
 
 SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
