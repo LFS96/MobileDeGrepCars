@@ -2,6 +2,7 @@ SELECT c.*,
        co.category as color_category,
        m.country,
        l.*,
+       ifnull(r.population, 9833) as population,
        count(DISTINCT  f.id) as features,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE1x%', '1','0')   as F1,
        if(GROUP_CONCAT(concat('FEATURE', f.id, 'x')) LIKE '%FEATURE2x%', '1','0')   as F2,
@@ -126,7 +127,8 @@ SELECT c.*,
          LEFT JOIN cars_features as cf ON c.id = cf.car
          INNER JOIN features AS f ON cf.feature = f.id
          INNER JOIN categories c2 on c.model = c2.model AND c2.manufacture = c.manufacturer
-         LEFT JOIN location as l ON city = zip
+         LEFT JOIN location as l ON city = l.zip
+         LEFT JOIN residents as r ON city = r.zip
     WHERE registration is not null
         AND c.color is not null
         AND c.color <> ''
@@ -136,6 +138,12 @@ SELECT c.*,
         AND damage = 'Unfallfrei'
         AND year(registration) BETWEEN 2010 AND 2014
         AND price <= 45000
-    GROUP BY id, co.category, m.country;
+
+
+        AND power < 175
+        AND price < 27000
+    GROUP BY id, co.category, m.country
+    HAVING  features < 60
+;
 
 SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
