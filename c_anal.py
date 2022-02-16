@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from findNewAdvertisments import get_mysql_connector
+from a_findNewAdvertisments import get_mysql_connector
 import datetime
 from os import system, name
 from multiprocessing.dummy import Pool as ThreadPool
@@ -45,6 +45,7 @@ def increaseCounter():
         counter += 1
         printProgressBar(counter, total)
 
+# Liefert den Webseitenquelltext zu einer ID
 def get_data(mydb, num):
     mycursor = mydb.cursor()
     #print(num)
@@ -55,7 +56,7 @@ def get_data(mydb, num):
         mydb.close()
         return x[0]
 
-
+# Liefert die ID eines Features Zurück, im Zweifel legt es eine ID  an
 def create_features(mydb, feature):
     mycursor = mydb.cursor()
     sql = "SELECT id FROM mobilede.features WHERE name = %s"
@@ -69,17 +70,17 @@ def create_features(mydb, feature):
         mycursor.close()
         return create_features(feature)
 
-
+# Speichert alle Features eines Wagens
 def save_car_features(mydb, a_id, features):
     mycursor = mydb.cursor()
     for feature in features:
-        f_id = create_features(mydb, feature)
+        f_id = create_features(mydb, feature) # Fragt die ID zu dem Namen eines Features ab
         mycursor.execute("INSERT INTO mobilede.cars_features (car, feature) VALUES ( %s, %s )", (a_id, f_id))
         mydb.commit()
     mycursor.close()
 
 
-
+# Analyse deines gegebenen MySQL Entry
 def save_car(data):
     mydb = get_mysql_connector()
 
@@ -240,7 +241,7 @@ def save_car(data):
     my_cursor.close()
     mydb.close()
 
-
+# Verarbeitet heruntergeladene Webseitenquelltexte
 def find_db_entry():
     global total
     limit = total

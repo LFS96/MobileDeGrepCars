@@ -1,8 +1,9 @@
 import requests
 
-from findNewAdvertisments import get_mysql_connector
+from a_findNewAdvertisments import get_mysql_connector
 
 
+# Schreibt Seitenquelltext in die Datenbank
 def update_advertisements(a_id, data):
     # Write url to advertisements Table
     mydb = get_mysql_connector()
@@ -14,12 +15,15 @@ def update_advertisements(a_id, data):
     my_cursor.execute(sql, val)
     mydb.commit()
 
+# Download des Quelltext einer gegebenen URL
 def downloadUrl(url):
     #print(url)
     header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0'}
     html_content = requests.get(url, headers=header)
     return html_content.text
 
+
+# Downloaded den Webseiten-Quelltext der nächsten X Urls aus der Datenbank, die noch nicht verarbeitet wurden.
 def get_next_advertisements(numbers):
     mydb = get_mysql_connector()
     mycursor = mydb.cursor()
@@ -35,6 +39,7 @@ def get_next_advertisements(numbers):
         print(str(i) + " - " + url)
         html = downloadUrl(url)
         update_advertisements(a_id, html)
+
 
 if __name__ == '__main__':
     get_next_advertisements(120000)
